@@ -6,6 +6,7 @@ public class Wheel : MonoBehaviour {
     [SerializeField] float radius;
 
     Rigidbody rb;
+    CollisionDetector collisionDetector;
     Transform contactMarker;
     List<Collider> overlappingColliders = new List<Collider>();
     Vector3 closestPoint;
@@ -24,6 +25,7 @@ public class Wheel : MonoBehaviour {
 
     private void Awake() {
         contactMarker = transform.Find("ContactMarker");
+        collisionDetector = transform.Find("Collision detector").GetComponent<CollisionDetector>();
         rb = GetComponent<Rigidbody>();
 
         springMinLength = springRestLength - springTravelLength;
@@ -49,26 +51,93 @@ public class Wheel : MonoBehaviour {
                 closestPoint = point;
             }
         }
-        contactMarker.position = closestPoint;
+        //contactMarker.position = closestPoint;
 
         if (closestDst != 9000)
             NormalForce();
     }
 
     void NormalForce() {
-        Vector3 normal = transform.position - closestPoint;
+        // Collider overlapps for each contact point.
+        List<float> x = new List<float>();
+        List<float> y = new List<float>();
+        // Overlapps added.
+        float xTotal = 0;
+        float yTotal = 0;
+        // Force distribution.
+        List<float> xForces = new List<float>();
+        List<float> yForces = new List<float>();
 
-        float newSpringLength;
-        newSpringLength = radius - normal.magnitude;
+        foreach (ContactPoint contact in collisionDetector.contacts) {
+            Vector3 point_ls = transform.InverseTransformPoint(contact.point);
+            x.Add(point_ls.x);
+            xTotal += point_ls.x;
+            y.Add(point_ls.y);
+            yTotal += point_ls.y;
+        }
 
-        Debug.Log(newSpringLength);
+        for (int i = 0; i < x.Count; i++) {
+            //xForces /= xTotal;
 
-        springVelocity = (springLength - newSpringLength) / Time.deltaTime;
-        springLength = newSpringLength;
+            Vector3 dirCenterToPoint = collisionDetector.contacts[i].point - transform.position;
 
-        springForce = springStiffness * (springRestLength - springLength);
-        damperForce = damper * springVelocity;
+            RaycastHit hit;
+            if (collisionDetector.contacts[i].otherCollider.Raycast(new Ray(transform.position, dirCenterToPoint), out hit, radius)) {
+                Vector3 normal = -dirCenterToPoint.normalized;
 
-        rb.AddForceAtPosition(-normal * (springForce + damperForce), closestPoint);
+                float newSpringLength;
+                newSpringLength = radius - hit.distance;
+                //newSpringLength = radius - normal.magnitude;
+
+                //Debug.Log(newSpringLength);
+
+                springVelocity = (springLength - newSpringLength) / Time.deltaTime;
+                springLength = newSpringLength;
+
+                springForce = springStiffness * (springRestLength - springLength);
+                damperForce = damper * springVelocity;
+
+                rb.AddForceAtPosition(-collisionDetector.contacts[i].normal * (springForce + damperForce), closestPoint);
+            }
+        }
+
+
+        //Vector3 dirCenterToPoint = collisionDetector.contacts[0].point - transform.position;
+
+        //RaycastHit hit;
+        //if (collisionDetector.contacts[0].otherCollider.Raycast(new Ray(transform.position, dirCenterToPoint), out hit, radius)) {
+        //    Vector3 normal = -dirCenterToPoint.normalized;
+
+        //    float newSpringLength;
+        //    newSpringLength = radius - hit.distance;
+        //    //newSpringLength = radius - normal.magnitude;
+
+        //    //Debug.Log(newSpringLength);
+
+        //    springVelocity = (springLength - newSpringLength) / Time.deltaTime;
+        //    springLength = newSpringLength;
+
+        //    springForce = springStiffness * (springRestLength - springLength);
+        //    damperForce = damper * springVelocity;
+
+        //    rb.AddForceAtPosition(-normal * (springForce + damperForce), closestPoint);
+        //}
     }
+
+    //void NormalForce() {
+    //    Vector3 normal = transform.position - closestPoint;
+
+    //    float newSpringLength;
+    //    newSpringLength = radius - normal.magnitude;
+
+    //    //Debug.Log(newSpringLength);
+
+    //    springVelocity = (springLength - newSpringLength) / Time.deltaTime;
+    //    springLength = newSpringLength;
+
+    //    springForce = springStiffness * (springRestLength - springLength);
+    //    damperForce = damper * springVelocity;
+
+    //    rb.AddForceAtPosition(-normal * (springForce + damperForce), closestPoint);
+    //}
 }
