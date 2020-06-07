@@ -4,11 +4,11 @@ using UnityEngine;
 
 public class CollisionDetector : MonoBehaviour {
     [SerializeField] GameObject contactMarker;
-    List<Collision> collisions = new List<Collision>();
     public List<ContactPoint> contacts = new List<ContactPoint>();
     List<GameObject> markers = new List<GameObject>();
 
     bool firstCollider = true;
+    bool noCollision = true;
 
     private void OnCollisionStay(Collision collision) {
         //Debug.Log(collision.contactCount);
@@ -20,10 +20,15 @@ public class CollisionDetector : MonoBehaviour {
             contacts.Add(contact);
         }
         DebugMarkers();
+        noCollision = false;
     }
 
     private void LateUpdate() {
         firstCollider = true;
+        if (noCollision)
+            contacts = new List<ContactPoint>();
+        else
+            noCollision = true;
     }
 
     void DebugMarkers() {

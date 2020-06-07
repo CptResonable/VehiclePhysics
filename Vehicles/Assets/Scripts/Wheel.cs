@@ -6,7 +6,7 @@ public class Wheel : MonoBehaviour {
     [SerializeField] float radius;
 
     Rigidbody rb;
-    CollisionDetector collisionDetector;
+    [HideInInspector] public CollisionDetector collisionDetector;
     Transform contactMarker;
     List<Collider> overlappingColliders = new List<Collider>();
     Vector3 closestPoint;
